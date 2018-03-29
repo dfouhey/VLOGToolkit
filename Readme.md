@@ -1,7 +1,7 @@
 # Welcome to the VLOG Dataset!
 
 This repository contains useful tools for working with the VLOG dataset. We will be updating
-this with additional tools as time goes on.
+this with additional tools as time goes on. For the dataset itself, please see [http://people.eecs.berkeley.edu/~dfouhey/2017/VLOG/]
 
 Dependencies:
 
