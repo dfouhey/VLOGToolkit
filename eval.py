@@ -182,9 +182,9 @@ if __name__ == "__main__":
 
 
     parser = argparse.ArgumentParser("VLOG Evaluation Kit")
-    parser.add_argument("--benchmark",type=str,default="",help="[hand_object|hand_touch|scene_category|scene_proxemic]",required=True)
-    parser.add_argument("--predictions",type=str,default="",help="prediction file (.npy)",required=True)
-    parser.add_argument("--dobci",action="store_true")
+    parser.add_argument("--benchmark",type=str,default="",help="[hand_object|hand_state|scene_category|scene_proxemic]",required=True)
+    parser.add_argument("--predictions",type=str,default="",help="prediction file (.npy,.txt)",required=True)
+    parser.add_argument("--dobci",action="store_true",help="Report 95%% BCI")
     parser.add_argument("--breakdown",type=str,default="",help="report results broken down by [scene_category|scene_proxemic]")
     args = parser.parse_args()
 
