@@ -168,15 +168,24 @@ if __name__ == "__main__":
     #N          - Number of videos in dataset (wc -l manifest.txt)
     #NTest      - Number of videos in test set (wc -l manifestTest.txt)
     #NImgTest   - Number of images in the test frame set (grep test hand_state/hand_state.txt  | wc -l)
-    
-    DATA_ROOT = "/home/dfouhey/dev/eco/cameraReadyRelease/pack/"
+
+    if not os.path.exists("DATA_ROOT"):
+        print "Missing DATA_ROOT file!"
+        print "Enter path of downloaded VLOG labels"
+        print "(or type it into a file named DATA_ROOT)"
+        path = raw_input(">")
+        file("DATA_ROOT","w").write(path)
+        print "Ok, try again"
+        sys.exit(1)
+
+    DATA_ROOT = file("DATA_ROOT").read().strip()
 
 
     parser = argparse.ArgumentParser("VLOG Evaluation Kit")
     parser.add_argument("--benchmark",type=str,default="",help="[hand_object|hand_touch|scene_category|scene_proxemic]",required=True)
     parser.add_argument("--predictions",type=str,default="",help="prediction file (.npy)",required=True)
     parser.add_argument("--dobci",action="store_true")
-    parser.add_argument("--breakdown",type=str,default="",help="report results broken down by [scene_category|scene_proxemics]")
+    parser.add_argument("--breakdown",type=str,default="",help="report results broken down by [scene_category|scene_proxemic]")
     args = parser.parse_args()
 
     scene_proxemic = np.load(DATA_ROOT+"/scene_proxemic/scene_proxemic_full.npy")
@@ -209,7 +218,7 @@ if __name__ == "__main__":
     breakdownCats = np.array([0])
     breakdownNames = ["All"]
     if breakdown == "scene_category":
-        breakdownVal = np.load(DATA_ROOT+"/scene_category/scene_category.npy")
+        breakdownVal = np.load(DATA_ROOT+"/scene_category/scene_category_full.npy")
         breakdownCats = np.unique(breakdownVal[breakdownVal>=0])
         breakdownNames = file(DATA_ROOT+"/scene_category/category_label.txt").read().strip().split("\n")
         
@@ -234,6 +243,9 @@ if __name__ == "__main__":
         uploaderIdTest = uploaderId[isTest]
 
         #load gt, and then subsample to test
+        labelNames = file(DATA_ROOT+"hand_object/hand_object_labels.txt").read().strip().split("\n")
+        labelNames.append("mAP")
+
         gtFn = DATA_ROOT+"/hand_object/hand_object.npy"
         YAll = np.load(gtFn)
         YTest = YAll[isTest,:]
@@ -249,11 +261,12 @@ if __name__ == "__main__":
             else:
                 pred = evaluateNBinary(YTest[use],prediction[use,:])
 
-            for i in range(pred.shape[0]):
-                for j in range(pred.shape[1]):
-                    print "%.2f" % (pred[i,j]*100), 
+            for j in range(pred.shape[1]):
+                print "%30s" % labelNames[j],
+                for i in range(pred.shape[0]):
+                    print (pred[i,j]*100),
                 print 
-
+            print
     elif benchmarkId == "hand_state":
         ###Given NImgTestx9 posteriors for images, compute accuracy
 
@@ -277,6 +290,62 @@ if __name__ == "__main__":
                 print evaluateAccuracy(labels[use],prediction[use],doBCI=True,bciGroup=uploaderId) 
             else:
                 print evaluateAccuracy(labels[use],prediction[use])
+
+
+    elif benchmarkId.startswith("scene_category"):
+        ###Given NTestx6 predictions for the scene category, compute accuracy
+        splitId = np.loadtxt(DATA_ROOT+"/splitId.txt")
+        isTest = splitId == 0
+
+        gtFn = DATA_ROOT+"/scene_category/scene_category_full.npy"
+        Y = np.load(gtFn)
+        Y = Y[isTest]
+        Yh = prediction
+
+
+        if benchmarkId == "scene_category_5":
+            Yh = np.argmax(Yh[:,:5],axis=1)
+            keep = np.logical_and(Y>=0,Y<5)
+        else:
+            Yh = np.argmax(Yh,axis=1)
+            keep = Y >= 0
+
+        breakdownVal = breakdownVal[isTest]
+        uploaderId = uploaderId[isTest]
+
+        for catI in range(len(breakdownNames)):
+            keep2 = np.logical_and(keep,np.equal(breakdownVal,breakdownCats[catI]))
+            print breakdownNames[catI]
+            if args.dobci:
+                res = evaluateAccuracy(Y[keep2],Yh[keep2],doBCI=True,bciGroup=uploaderId[keep2])
+            else:
+                res = evaluateAccuracy(Y[keep2],Yh[keep2])
+            print res
+
+
+    elif benchmarkId == "scene_proxemic":
+        ###Given NTestx4 predictions for the scene category, compute accuracy
+        splitId = np.loadtxt(DATA_ROOT+"/splitId.txt")
+        isTest = splitId == 0
+
+        gtFn = DATA_ROOT+"/scene_proxemic/scene_proxemic_full.npy"
+        Y = np.load(gtFn)
+        Y = Y[isTest]
+        Yh = np.argmax(prediction,axis=1)
+
+        keep = Y >= 0
+
+        breakdownVal = breakdownVal[isTest]
+        uploaderId = uploaderId[isTest]
+
+        for catI in range(len(breakdownNames)):
+            keep2 = np.logical_and(keep,np.equal(breakdownVal,breakdownCats[catI]))
+            print breakdownNames[catI]
+            if args.dobci:
+                res = evaluateAccuracy(Y[keep2],Yh[keep2],doBCI=True,bciGroup=uploaderId[keep2])
+            else:
+                res = evaluateAccuracy(Y[keep2],Yh[keep2])
+            print res
 
     elif benchmarkId == "scene_category_places":
         ###Given Nx365 posteriors for the places 365 dataset, compute top-5 accuracy
@@ -334,60 +403,4 @@ if __name__ == "__main__":
             else:
                 res = evaluateAccuracy(Y[keep2],Yh[keep2])
             print res
-
-    elif benchmarkId.startswith("scene_category"):
-        ###Given NTestx6 predictions for the scene category, compute accuracy
-        splitId = np.loadtxt(DATA_ROOT+"/splitId.txt")
-        isTest = splitId == 0
-
-        gtFn = DATA_ROOT+"/scene_category/scene_category_full.npy"
-        Y = np.load(gtFn)
-        Y = Y[isTest]
-        Yh = prediction
-
-
-        if benchmarkId == "scene_category_5":
-            Yh = np.argmax(Yh[:,:5],axis=1)
-            keep = np.logical_and(Y>=0,Y<5)
-        else:
-            Yh = np.argmax(Yh,axis=1)
-            keep = Y >= 0
-
-        breakdownVal = breakdownVal[isTest]
-        uploaderId = uploaderId[isTest]
-
-        for catI in range(len(breakdownNames)):
-            keep2 = np.logical_and(keep,np.equal(breakdownVal,breakdownCats[catI]))
-            print breakdownNames[catI]
-            if args.dobci:
-                res = evaluateAccuracy(Y[keep2],Yh[keep2],doBCI=True,bciGroup=uploaderId[keep2])
-            else:
-                res = evaluateAccuracy(Y[keep2],Yh[keep2])
-            print res
-
-
-    elif benchmarkId == "scene_proxemic":
-        ###Given NTestx4 predictions for the scene category, compute accuracy
-        splitId = np.loadtxt(DATA_ROOT+"/splitId.txt")
-        isTest = splitId == 0
-
-        gtFn = DATA_ROOT+"/scene_proxemic/scene_proxemic_full.npy"
-        Y = np.load(gtFn)
-        Y = Y[isTest]
-        Yh = np.argmax(prediction,axis=1)
-
-        keep = Y >= 0
-
-        breakdownVal = breakdownVal[isTest]
-        uploaderId = uploaderId[isTest]
-
-        for catI in range(len(breakdownNames)):
-            keep2 = np.logical_and(keep,np.equal(breakdownVal,breakdownCats[catI]))
-            print breakdownNames[catI]
-            if args.dobci:
-                res = evaluateAccuracy(Y[keep2],Yh[keep2],doBCI=True,bciGroup=uploaderId[keep2])
-            else:
-                res = evaluateAccuracy(Y[keep2],Yh[keep2])
-            print res
-
 
