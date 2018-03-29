@@ -251,7 +251,7 @@ if __name__ == "__main__":
 
             for i in range(pred.shape[0]):
                 for j in range(pred.shape[1]):
-                    print "%.2f" % (pred[i,j]*100),
+                    print "%.2f" % (pred[i,j]*100), 
                 print 
 
     elif benchmarkId == "hand_state":
