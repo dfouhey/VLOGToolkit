@@ -1,7 +1,9 @@
 # Welcome to the VLOG Dataset!
 
-This repository contains useful tools for working with the VLOG dataset. We will be updating
-this with additional tools as time goes on. For the dataset itself, please see [http://people.eecs.berkeley.edu/~dfouhey/2017/VLOG/]
+This repository contains useful tools for working with the VLOG dataset. We may update
+this with additional tools as time goes on. For the dataset itself, please see [here](http://people.eecs.berkeley.edu/~dfouhey/2017/VLOG/)
+or if you are lazy, the data file is [here](http://people.eecs.berkeley.edu/~dfouhey/2017/VLOG/data/data_v1.1.tgz). You may
+be able to download our cached copies if you meet certain conditions. Please see the website for details.
 
 Dependencies:
 
@@ -11,7 +13,7 @@ Dependencies:
 
 You have to specify paths to files in the following files (although all the scripts will prompt you for paths):
 
-* `DATA_ROOT` should contain the path of the labels file
+* `DATA_ROOT` should contain the path of the labels directory 
 * `CLIP_ROOT` should contain the path of the clips, dumped in the /X/Y/Z/v_TUVWXYZ/001/clip.mp4 format described in the data folder
 * `FRAME_ROOT` should contain the path of the frames, dumped in the /X/Y/Z/v_TUVWXZ/001/frame000001.jpg format described in the data folder
 
